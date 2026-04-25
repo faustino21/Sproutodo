@@ -24,7 +24,7 @@ export default function App() {
       <header className={s.header}>
         <div className={s.brand}>
           <Leaf size={18} strokeWidth={2} />
-          <span>simple todo</span>
+          <span>sproutodo</span>
         </div>
         <div className={s.headerActions}>
           <button

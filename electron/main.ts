@@ -27,7 +27,7 @@ function createWindow() {
     minHeight: 480,
     backgroundColor: '#FAFBF7',
     titleBarStyle: 'hiddenInset',
-    title: 'simple todo',
+    title: 'sproutodo',
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),
       contextIsolation: true,

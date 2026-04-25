@@ -1,5 +1,5 @@
-appId: io.github.faustino21.simple-todo
-productName: simple-todo
+appId: io.github.faustino21.sproutodo
+productName: sproutodo
 directories:
   output: release
   buildResources: build
