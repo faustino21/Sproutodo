@@ -1,0 +1,69 @@
+:root {
+  --bg: #FAFBF7;
+  --surface: #FFFFFF;
+  --border: #E6EAE0;
+  --text: #2B3A2E;
+  --text-muted: #6B7A6E;
+  --accent: #5B8C5A;
+  --accent-soft: #E4EFE0;
+  --accent-deep: #3F6B40;
+  --danger: #C4756B;
+  --shadow-sm: 0 1px 2px rgba(43, 58, 46, 0.04);
+  --shadow-md: 0 4px 14px rgba(43, 58, 46, 0.08);
+  --radius: 10px;
+  --radius-sm: 6px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  margin: 0;
+  height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+button:focus-visible,
+input:focus-visible,
+[role="button"]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+input, textarea {
+  font: inherit;
+  color: inherit;
+  user-select: text;
+}
+
+a {
+  color: var(--accent-deep);
+}
+
+/* react-day-picker theming */
+.rdp-root {
+  --rdp-accent-color: var(--accent);
+  --rdp-accent-background-color: var(--accent-soft);
+  --rdp-day-height: 36px;
+  --rdp-day-width: 36px;
+  font-size: 13px;
+}
