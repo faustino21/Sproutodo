@@ -83,7 +83,7 @@ function createWindow() {
     minHeight: 480,
     backgroundColor: '#FAFBF7',
     titleBarStyle: 'hiddenInset',
-    title: 'sproutodo',
+    title: 'Sproutodo',
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),
       contextIsolation: true,
