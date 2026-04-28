@@ -2,6 +2,7 @@ import { app, BrowserWindow, ipcMain, shell } from 'electron';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
+import electronUpdater, { type UpdateInfo, type ProgressInfo } from 'electron-updater';
 import {
   readTodos,
   writeTodos,
@@ -12,6 +13,18 @@ import {
 } from './storage.js';
 import { sendNotionReport, type ReportRange } from './notion.js';
 
+const { autoUpdater } = electronUpdater;
+
+export type UpdaterStatus =
+  | { kind: 'idle' }
+  | { kind: 'unsupported-dev' }
+  | { kind: 'checking' }
+  | { kind: 'not-available' }
+  | { kind: 'available'; version: string }
+  | { kind: 'downloading'; percent: number }
+  | { kind: 'downloaded'; version: string }
+  | { kind: 'error'; message: string };
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 process.env.APP_ROOT = path.join(__dirname, '..');
@@ -19,6 +32,48 @@ const VITE_DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL;
 const RENDERER_DIST = path.join(process.env.APP_ROOT, 'dist');
 
 let win: BrowserWindow | null = null;
+let updaterStatus: UpdaterStatus = { kind: 'idle' };
+let updaterInitialized = false;
+
+function setUpdaterStatus(next: UpdaterStatus) {
+  if (
+    updaterStatus.kind === 'downloading' &&
+    next.kind === 'downloading' &&
+    updaterStatus.percent === next.percent
+  ) {
+    return;
+  }
+  updaterStatus = next;
+  win?.webContents.send('updater:status', next);
+}
+
+function initUpdater() {
+  if (updaterInitialized) return;
+  updaterInitialized = true;
+  if (VITE_DEV_SERVER_URL) {
+    setUpdaterStatus({ kind: 'unsupported-dev' });
+    return;
+  }
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true;
+  autoUpdater.on('checking-for-update', () => setUpdaterStatus({ kind: 'checking' }));
+  autoUpdater.on('update-available', (info: UpdateInfo) =>
+    setUpdaterStatus({ kind: 'available', version: info.version }),
+  );
+  autoUpdater.on('update-not-available', () => setUpdaterStatus({ kind: 'not-available' }));
+  autoUpdater.on('download-progress', (p: ProgressInfo) =>
+    setUpdaterStatus({ kind: 'downloading', percent: Math.round(p.percent) }),
+  );
+  autoUpdater.on('update-downloaded', (info: UpdateInfo) =>
+    setUpdaterStatus({ kind: 'downloaded', version: info.version }),
+  );
+  autoUpdater.on('error', (err: Error) =>
+    setUpdaterStatus({ kind: 'error', message: err?.message ?? 'Unknown updater error' }),
+  );
+  autoUpdater.checkForUpdates().catch(() => {
+    /* error event already fires */
+  });
+}
 
 function createWindow() {
   win = new BrowserWindow({
@@ -47,6 +102,7 @@ function createWindow() {
 app.whenReady().then(() => {
   registerIpc();
   createWindow();
+  initUpdater();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
@@ -139,4 +195,25 @@ function registerIpc() {
   ipcMain.handle('shell:openExternal', async (_evt, url: string) => {
     await shell.openExternal(url);
   });
+
+  ipcMain.handle('updater:check', async () => {
+    if (VITE_DEV_SERVER_URL) return updaterStatus;
+    try {
+      await autoUpdater.checkForUpdates();
+    } catch {
+      /* error event already fires */
+    }
+    return updaterStatus;
+  });
+
+  ipcMain.handle('updater:quitAndInstall', async () => {
+    if (updaterStatus.kind !== 'downloaded') return false;
+    autoUpdater.quitAndInstall();
+    return true;
+  });
+
+  ipcMain.handle('updater:getState', async () => ({
+    status: updaterStatus,
+    appVersion: app.getVersion(),
+  }));
 }

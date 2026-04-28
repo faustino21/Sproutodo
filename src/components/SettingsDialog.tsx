@@ -1,6 +1,27 @@
 import { useEffect, useState } from 'react';
-import type { Settings } from '../lib/types';
+import type { Settings, UpdaterStatus } from '../lib/types';
 import s from '../styles/App.module.css';
+
+function statusLabel(status: UpdaterStatus): string {
+  switch (status.kind) {
+    case 'idle':
+      return 'Up to date.';
+    case 'unsupported-dev':
+      return 'Updates are disabled in dev mode.';
+    case 'checking':
+      return 'Checking for updates…';
+    case 'not-available':
+      return 'You’re on the latest version.';
+    case 'available':
+      return `Update available — v${status.version}.`;
+    case 'downloading':
+      return `Downloading… ${status.percent}%`;
+    case 'downloaded':
+      return `v${status.version} ready to install.`;
+    case 'error':
+      return `Update error: ${status.message}`;
+  }
+}
 
 type Props = {
   open: boolean;
@@ -20,6 +41,8 @@ export function SettingsDialog({ open, onClose, onSaved }: Props) {
   const [savedToken, setSavedToken] = useState<string | undefined>();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [appVersion, setAppVersion] = useState('');
+  const [updaterStatus, setUpdaterStatus] = useState<UpdaterStatus>({ kind: 'idle' });
 
   useEffect(() => {
     if (!open) return;
@@ -29,6 +52,12 @@ export function SettingsDialog({ open, onClose, onSaved }: Props) {
       setToken('');
       setPageId(cur.notionPageId ?? '');
     });
+    window.api.updater.getState().then(({ status, appVersion }) => {
+      setUpdaterStatus(status);
+      setAppVersion(appVersion);
+    });
+    const unsubscribe = window.api.updater.onStatus(setUpdaterStatus);
+    return unsubscribe;
   }, [open]);
 
   if (!open) return null;
@@ -98,6 +127,50 @@ export function SettingsDialog({ open, onClose, onSaved }: Props) {
           >
             {saving ? 'Saving…' : 'Save'}
           </button>
+        </div>
+
+        <div className={s.aboutSection}>
+          <div className={s.aboutHeader}>
+            <div>
+              <h3 className={s.aboutTitle}>About</h3>
+              {appVersion && <div className={s.aboutVersion}>Version {appVersion}</div>}
+            </div>
+            {updaterStatus.kind !== 'unsupported-dev' && updaterStatus.kind !== 'downloaded' && (
+              <button
+                className={s.btnGhost}
+                onClick={() => window.api.updater.check()}
+                disabled={
+                  updaterStatus.kind === 'checking' ||
+                  updaterStatus.kind === 'available' ||
+                  updaterStatus.kind === 'downloading'
+                }
+              >
+                {updaterStatus.kind === 'checking' ? 'Checking…' : 'Check for updates'}
+              </button>
+            )}
+          </div>
+
+          <div className={updaterStatus.kind === 'error' ? s.aboutError : s.aboutStatus}>
+            {statusLabel(updaterStatus)}
+          </div>
+
+          {updaterStatus.kind === 'downloading' && (
+            <div className={s.progressTrack}>
+              <div
+                className={s.progressFill}
+                style={{ width: `${updaterStatus.percent}%` }}
+              />
+            </div>
+          )}
+
+          {updaterStatus.kind === 'downloaded' && (
+            <button
+              className={`${s.btn} ${s.btnPrimary}`}
+              onClick={() => window.api.updater.quitAndInstall()}
+            >
+              Install &amp; restart
+            </button>
+          )}
         </div>
       </div>
     </div>

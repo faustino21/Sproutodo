@@ -13,6 +13,16 @@ export type Settings = {
 
 export type ReportRange = { from: string; to: string };
 
+export type UpdaterStatus =
+  | { kind: 'idle' }
+  | { kind: 'unsupported-dev' }
+  | { kind: 'checking' }
+  | { kind: 'not-available' }
+  | { kind: 'available'; version: string }
+  | { kind: 'downloading'; percent: number }
+  | { kind: 'downloaded'; version: string }
+  | { kind: 'error'; message: string };
+
 declare global {
   interface Window {
     api: {
@@ -36,6 +46,12 @@ declare global {
       };
       shell: {
         openExternal: (url: string) => Promise<void>;
+      };
+      updater: {
+        check: () => Promise<UpdaterStatus>;
+        quitAndInstall: () => Promise<boolean>;
+        getState: () => Promise<{ status: UpdaterStatus; appVersion: string }>;
+        onStatus: (cb: (s: UpdaterStatus) => void) => () => void;
       };
     };
   }

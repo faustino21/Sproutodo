@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type { Todo, Settings } from './storage.js';
 import type { ReportRange } from './notion.js';
+import type { UpdaterStatus } from './main.js';
 
 const api = {
   todos: {
@@ -26,6 +27,19 @@ const api = {
   },
   shell: {
     openExternal: (url: string): Promise<void> => ipcRenderer.invoke('shell:openExternal', url),
+  },
+  updater: {
+    check: (): Promise<UpdaterStatus> => ipcRenderer.invoke('updater:check'),
+    quitAndInstall: (): Promise<boolean> => ipcRenderer.invoke('updater:quitAndInstall'),
+    getState: (): Promise<{ status: UpdaterStatus; appVersion: string }> =>
+      ipcRenderer.invoke('updater:getState'),
+    onStatus: (cb: (s: UpdaterStatus) => void): (() => void) => {
+      const handler = (_e: unknown, s: UpdaterStatus) => cb(s);
+      ipcRenderer.on('updater:status', handler);
+      return () => {
+        ipcRenderer.off('updater:status', handler);
+      };
+    },
   },
 };
 
