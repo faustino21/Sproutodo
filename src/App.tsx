@@ -9,7 +9,7 @@ import { ReportDialog } from './components/ReportDialog';
 import s from './styles/App.module.css';
 
 export default function App() {
-  const { todos, loaded, add, toggle, remove } = useTodos();
+  const { todos, loaded, add, toggle, remove, edit, reorder, dropLocal } = useTodos();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [toast, setToast] = useState<{ message: string; url?: string } | null>(null);
@@ -24,7 +24,7 @@ export default function App() {
       <header className={s.header}>
         <div className={s.brand}>
           <Leaf size={18} strokeWidth={2} />
-          <span>sproutodo</span>
+          <span>Sproutodo</span>
         </div>
         <div className={s.headerActions}>
           <button
@@ -49,7 +49,13 @@ export default function App() {
       {loaded && todos.length === 0 ? (
         <EmptyState />
       ) : (
-        <TodoList todos={todos} onToggle={toggle} onRemove={remove} />
+        <TodoList
+          todos={todos}
+          onToggle={toggle}
+          onRemove={remove}
+          onEdit={edit}
+          onReorder={reorder}
+        />
       )}
 
       <TodoInput onAdd={add} />
@@ -58,7 +64,10 @@ export default function App() {
       <ReportDialog
         open={reportOpen}
         onClose={() => setReportOpen(false)}
-        onSent={(url) => showToast('Report created', url)}
+        onSent={(url, removedIds) => {
+          dropLocal(removedIds);
+          showToast('Report created', url);
+        }}
         onMissingSettings={() => {
           setReportOpen(false);
           setSettingsOpen(true);

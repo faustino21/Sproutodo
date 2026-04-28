@@ -5,6 +5,10 @@
   "main": "dist-electron/main.js",
   "type": "module",
   "author": "faustino21",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/faustino21/Sproutodo.git"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
@@ -12,7 +16,11 @@
     "package:all": "npm run build && electron-builder -mwl"
   },
   "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
     "@notionhq/client": "^2.2.15",
+    "electron-updater": "^6.8.3",
     "lucide-react": "^0.460.0",
     "react": "^18.3.1",
     "react-day-picker": "^9.4.0",

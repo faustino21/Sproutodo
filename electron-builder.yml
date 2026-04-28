@@ -29,3 +29,7 @@ linux:
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
+publish:
+  provider: github
+  owner: faustino21
+  repo: Sproutodo

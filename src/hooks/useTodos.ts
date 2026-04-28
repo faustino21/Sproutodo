@@ -29,5 +29,31 @@ export function useTodos() {
     await window.api.todos.remove(id);
   }, []);
 
-  return { todos, loaded, add, toggle, remove };
+  const edit = useCallback(async (id: string, text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    const updated = await window.api.todos.update(id, trimmed);
+    setTodos((prev) => prev.map((t) => (t.id === id ? updated : t)));
+  }, []);
+
+  const reorder = useCallback(async (ids: string[]) => {
+    setTodos((prev) => {
+      const byId = new Map(prev.map((t) => [t.id, t]));
+      return ids.map((id) => byId.get(id)).filter((t): t is Todo => !!t);
+    });
+    try {
+      await window.api.todos.reorder(ids);
+    } catch {
+      const fresh = await window.api.todos.list();
+      setTodos(fresh);
+    }
+  }, []);
+
+  const dropLocal = useCallback((ids: string[]) => {
+    if (ids.length === 0) return;
+    const set = new Set(ids);
+    setTodos((prev) => prev.filter((t) => !set.has(t.id)));
+  }, []);
+
+  return { todos, loaded, add, toggle, remove, edit, reorder, dropLocal };
 }
