@@ -49,5 +49,11 @@ export function useTodos() {
     }
   }, []);
 
-  return { todos, loaded, add, toggle, remove, edit, reorder };
+  const dropLocal = useCallback((ids: string[]) => {
+    if (ids.length === 0) return;
+    const set = new Set(ids);
+    setTodos((prev) => prev.filter((t) => !set.has(t.id)));
+  }, []);
+
+  return { todos, loaded, add, toggle, remove, edit, reorder, dropLocal };
 }

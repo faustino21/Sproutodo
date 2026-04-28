@@ -9,7 +9,7 @@ import { ReportDialog } from './components/ReportDialog';
 import s from './styles/App.module.css';
 
 export default function App() {
-  const { todos, loaded, add, toggle, remove, edit, reorder } = useTodos();
+  const { todos, loaded, add, toggle, remove, edit, reorder, dropLocal } = useTodos();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [toast, setToast] = useState<{ message: string; url?: string } | null>(null);
@@ -64,7 +64,10 @@ export default function App() {
       <ReportDialog
         open={reportOpen}
         onClose={() => setReportOpen(false)}
-        onSent={(url) => showToast('Report created', url)}
+        onSent={(url, removedIds) => {
+          dropLocal(removedIds);
+          showToast('Report created', url);
+        }}
         onMissingSettings={() => {
           setReportOpen(false);
           setSettingsOpen(true);

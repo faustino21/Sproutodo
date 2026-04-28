@@ -18,8 +18,11 @@ const api = {
     save: (s: Settings): Promise<void> => ipcRenderer.invoke('settings:save', s),
   },
   notion: {
-    sendReport: (range: ReportRange): Promise<{ url: string }> =>
-      ipcRenderer.invoke('notion:sendReport', range),
+    sendReport: (
+      range: ReportRange,
+      clearCompleted: boolean,
+    ): Promise<{ url: string; removedIds: string[] }> =>
+      ipcRenderer.invoke('notion:sendReport', range, clearCompleted),
   },
   shell: {
     openExternal: (url: string): Promise<void> => ipcRenderer.invoke('shell:openExternal', url),

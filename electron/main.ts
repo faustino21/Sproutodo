@@ -111,18 +111,29 @@ function registerIpc() {
   ipcMain.handle('settings:get', async () => readSettings());
   ipcMain.handle('settings:save', async (_evt, s) => writeSettings(s));
 
-  ipcMain.handle('notion:sendReport', async (_evt, range: ReportRange) => {
+  ipcMain.handle('notion:sendReport', async (_evt, range: ReportRange, clearCompleted?: unknown) => {
     const settings = await readSettings();
     if (!settings.notionToken || !settings.notionPageId) {
       throw new Error('Notion settings missing. Add token and page ID first.');
     }
     const todos = await readTodos();
-    return sendNotionReport({
+    const result = await sendNotionReport({
       token: settings.notionToken,
       pageId: settings.notionPageId,
       todos,
       range,
     });
+
+    let removedIds: string[] = [];
+    if (clearCompleted === true) {
+      const fresh = await readTodos();
+      removedIds = fresh.filter((t) => t.done).map((t) => t.id);
+      if (removedIds.length > 0) {
+        await writeTodos(fresh.filter((t) => !t.done));
+      }
+    }
+
+    return { url: result.url, removedIds };
   });
 
   ipcMain.handle('shell:openExternal', async (_evt, url: string) => {
