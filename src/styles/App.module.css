@@ -405,3 +405,18 @@
   color: var(--text-muted);
   margin-bottom: 8px;
 }
+
+.clearOption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 4px 0 12px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.clearOption input {
+  cursor: pointer;
+}

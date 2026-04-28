@@ -5,7 +5,7 @@ import s from '../styles/App.module.css';
 type Props = {
   open: boolean;
   onClose: () => void;
-  onSent: (url: string) => void;
+  onSent: (url: string, removedIds: string[]) => void;
   onMissingSettings: () => void;
 };
 
@@ -27,11 +27,13 @@ export function ReportDialog({ open, onClose, onSent, onMissingSettings }: Props
   const [range, setRange] = useState<DateRange | undefined>({ from: today, to: today });
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [clearCompleted, setClearCompleted] = useState(false);
 
   useEffect(() => {
     if (open) {
       setRange({ from: new Date(), to: new Date() });
       setError(null);
+      setClearCompleted(false);
     }
   }, [open]);
 
@@ -50,8 +52,8 @@ export function ReportDialog({ open, onClose, onSent, onMissingSettings }: Props
     try {
       const from = toIsoDate(range.from);
       const to = toIsoDate(range.to ?? range.from);
-      const result = await window.api.notion.sendReport({ from, to });
-      onSent(result.url);
+      const result = await window.api.notion.sendReport({ from, to }, clearCompleted);
+      onSent(result.url, result.removedIds);
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to send report.');
@@ -79,6 +81,15 @@ export function ReportDialog({ open, onClose, onSent, onMissingSettings }: Props
         </div>
 
         <p className={s.rangeSummary}>{formatRange(range)}</p>
+
+        <label className={s.clearOption}>
+          <input
+            type="checkbox"
+            checked={clearCompleted}
+            onChange={(e) => setClearCompleted(e.target.checked)}
+          />
+          <span>Clear completed tasks after sending</span>
+        </label>
 
         <div className={s.actions}>
           <button className={`${s.btn} ${s.btnSecondary}`} onClick={onClose}>

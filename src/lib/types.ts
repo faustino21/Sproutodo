@@ -29,7 +29,10 @@ declare global {
         save: (s: Settings) => Promise<void>;
       };
       notion: {
-        sendReport: (range: ReportRange) => Promise<{ url: string }>;
+        sendReport: (
+          range: ReportRange,
+          clearCompleted: boolean,
+        ) => Promise<{ url: string; removedIds: string[] }>;
       };
       shell: {
         openExternal: (url: string) => Promise<void>;
