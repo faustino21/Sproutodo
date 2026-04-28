@@ -5,6 +5,7 @@ import { randomUUID } from 'node:crypto';
 import {
   readTodos,
   writeTodos,
+  reorderTodos,
   readSettings,
   writeSettings,
   type Todo,
@@ -87,6 +88,24 @@ function registerIpc() {
     const todos = await readTodos();
     const next = todos.filter((t) => t.id !== id);
     await writeTodos(next);
+  });
+
+  ipcMain.handle('todos:reorder', async (_evt, ids: unknown) => {
+    if (!Array.isArray(ids) || !ids.every((x) => typeof x === 'string')) {
+      throw new Error('todos:reorder expects string[]');
+    }
+    return reorderTodos(ids);
+  });
+
+  ipcMain.handle('todos:update', async (_evt, id: string, text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed) throw new Error('Todo text cannot be empty');
+    const todos = await readTodos();
+    const idx = todos.findIndex((t) => t.id === id);
+    if (idx === -1) throw new Error(`Todo ${id} not found`);
+    todos[idx].text = trimmed;
+    await writeTodos(todos);
+    return todos[idx];
   });
 
   ipcMain.handle('settings:get', async () => readSettings());

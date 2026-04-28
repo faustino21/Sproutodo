@@ -9,7 +9,7 @@ import { ReportDialog } from './components/ReportDialog';
 import s from './styles/App.module.css';
 
 export default function App() {
-  const { todos, loaded, add, toggle, remove } = useTodos();
+  const { todos, loaded, add, toggle, remove, edit, reorder } = useTodos();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [toast, setToast] = useState<{ message: string; url?: string } | null>(null);
@@ -49,7 +49,13 @@ export default function App() {
       {loaded && todos.length === 0 ? (
         <EmptyState />
       ) : (
-        <TodoList todos={todos} onToggle={toggle} onRemove={remove} />
+        <TodoList
+          todos={todos}
+          onToggle={toggle}
+          onRemove={remove}
+          onEdit={edit}
+          onReorder={reorder}
+        />
       )}
 
       <TodoInput onAdd={add} />
