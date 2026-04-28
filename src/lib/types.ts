@@ -21,6 +21,8 @@ declare global {
         add: (text: string) => Promise<Todo>;
         toggle: (id: string) => Promise<Todo>;
         remove: (id: string) => Promise<void>;
+        update: (id: string, text: string) => Promise<Todo>;
+        reorder: (ids: string[]) => Promise<Todo[]>;
       };
       settings: {
         get: () => Promise<Settings>;

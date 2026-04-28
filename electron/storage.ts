@@ -38,5 +38,21 @@ async function writeJsonAtomic(file: string, data: unknown): Promise<void> {
 export const readTodos = () => readJson<Todo[]>(todosPath(), []);
 export const writeTodos = (todos: Todo[]) => writeJsonAtomic(todosPath(), todos);
 
+export async function reorderTodos(ids: string[]): Promise<Todo[]> {
+  const current = await readTodos();
+  const byId = new Map(current.map((t) => [t.id, t]));
+  const ordered: Todo[] = [];
+  for (const id of ids) {
+    const t = byId.get(id);
+    if (t) {
+      ordered.push(t);
+      byId.delete(id);
+    }
+  }
+  for (const t of current) if (byId.has(t.id)) ordered.push(t);
+  await writeTodos(ordered);
+  return ordered;
+}
+
 export const readSettings = () => readJson<Settings>(settingsPath(), {});
 export const writeSettings = (s: Settings) => writeJsonAtomic(settingsPath(), s);
