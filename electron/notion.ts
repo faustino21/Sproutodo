@@ -50,8 +50,9 @@ export async function sendNotionReport(opts: {
   pageId: string;
   todos: Todo[];
   range: ReportRange;
+  workspaceName?: string;
 }): Promise<{ url: string }> {
-  const { token, pageId, todos, range } = opts;
+  const { token, pageId, todos, range, workspaceName } = opts;
 
   const fromDate = new Date(`${range.from}T00:00:00`);
   const toDate = new Date(`${range.to}T23:59:59.999`);
@@ -60,9 +61,10 @@ export async function sendNotionReport(opts: {
   const open = todos.filter((t) => !t.done && inRange(t.createdAt, fromDate, toDate));
 
   const sameDay = range.from === range.to;
-  const title = sameDay
-    ? `Todo Report — ${range.from}`
-    : `Todo Report — ${range.from} → ${range.to}`;
+  const dateLabel = sameDay ? range.from : `${range.from} → ${range.to}`;
+  const title = workspaceName
+    ? `${workspaceName} — Todo Report — ${dateLabel}`
+    : `Todo Report — ${dateLabel}`;
 
   const children: any[] = [];
   children.push(heading(`Completed (${completed.length})`));

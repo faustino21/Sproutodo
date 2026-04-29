@@ -7,9 +7,14 @@ import {
   readTodos,
   writeTodos,
   reorderTodos,
+  moveTodo,
   readSettings,
   writeSettings,
+  readWorkspaces,
+  writeWorkspaces,
+  ensureWorkspaces,
   type Todo,
+  type Workspace,
 } from './storage.js';
 import { sendNotionReport, type ReportRange } from './notion.js';
 
@@ -99,7 +104,8 @@ function createWindow() {
   }
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  await ensureWorkspaces();
   registerIpc();
   createWindow();
   initUpdater();
@@ -114,15 +120,29 @@ app.on('window-all-closed', () => {
 });
 
 function registerIpc() {
-  ipcMain.handle('todos:list', async () => readTodos());
+  ipcMain.handle('todos:list', async (_evt, workspaceId: string) => {
+    if (typeof workspaceId !== 'string' || !workspaceId) {
+      throw new Error('todos:list expects a workspaceId');
+    }
+    const todos = await readTodos();
+    return todos.filter((t) => t.workspaceId === workspaceId);
+  });
 
-  ipcMain.handle('todos:add', async (_evt, text: string) => {
+  ipcMain.handle('todos:add', async (_evt, text: string, workspaceId: string) => {
+    if (typeof workspaceId !== 'string' || !workspaceId) {
+      throw new Error('todos:add expects a workspaceId');
+    }
+    const workspaces = await readWorkspaces();
+    if (!workspaces.some((w) => w.id === workspaceId)) {
+      throw new Error(`Workspace ${workspaceId} not found`);
+    }
     const todos = await readTodos();
     const todo: Todo = {
       id: randomUUID(),
       text: text.trim(),
       done: false,
       createdAt: new Date().toISOString(),
+      workspaceId,
     };
     todos.unshift(todo);
     await writeTodos(todos);
@@ -146,11 +166,22 @@ function registerIpc() {
     await writeTodos(next);
   });
 
-  ipcMain.handle('todos:reorder', async (_evt, ids: unknown) => {
+  ipcMain.handle('todos:reorder', async (_evt, workspaceId: unknown, ids: unknown) => {
+    if (typeof workspaceId !== 'string' || !workspaceId) {
+      throw new Error('todos:reorder expects a workspaceId');
+    }
     if (!Array.isArray(ids) || !ids.every((x) => typeof x === 'string')) {
       throw new Error('todos:reorder expects string[]');
     }
-    return reorderTodos(ids);
+    return reorderTodos(workspaceId, ids);
+  });
+
+  ipcMain.handle('todos:move', async (_evt, id: unknown, workspaceId: unknown) => {
+    if (typeof id !== 'string' || !id) throw new Error('todos:move expects an id');
+    if (typeof workspaceId !== 'string' || !workspaceId) {
+      throw new Error('todos:move expects a workspaceId');
+    }
+    return moveTodo(id, workspaceId);
   });
 
   ipcMain.handle('todos:update', async (_evt, id: string, text: string) => {
@@ -164,33 +195,104 @@ function registerIpc() {
     return todos[idx];
   });
 
+  ipcMain.handle('workspaces:list', async () => readWorkspaces());
+
+  ipcMain.handle('workspaces:create', async (_evt, name: unknown) => {
+    if (typeof name !== 'string') throw new Error('workspaces:create expects a name');
+    const trimmed = name.trim();
+    if (!trimmed) throw new Error('Workspace name cannot be empty');
+    const workspaces = await readWorkspaces();
+    const ws: Workspace = {
+      id: randomUUID(),
+      name: trimmed,
+      createdAt: new Date().toISOString(),
+    };
+    workspaces.push(ws);
+    await writeWorkspaces(workspaces);
+    return ws;
+  });
+
+  ipcMain.handle('workspaces:rename', async (_evt, id: unknown, name: unknown) => {
+    if (typeof id !== 'string' || typeof name !== 'string') {
+      throw new Error('workspaces:rename expects (id, name)');
+    }
+    const trimmed = name.trim();
+    if (!trimmed) throw new Error('Workspace name cannot be empty');
+    const workspaces = await readWorkspaces();
+    const idx = workspaces.findIndex((w) => w.id === id);
+    if (idx === -1) throw new Error(`Workspace ${id} not found`);
+    workspaces[idx].name = trimmed;
+    await writeWorkspaces(workspaces);
+    return workspaces[idx];
+  });
+
+  ipcMain.handle('workspaces:delete', async (_evt, id: unknown) => {
+    if (typeof id !== 'string') throw new Error('workspaces:delete expects an id');
+    const workspaces = await readWorkspaces();
+    if (workspaces.length <= 1) throw new Error('Cannot delete the only workspace.');
+    const idx = workspaces.findIndex((w) => w.id === id);
+    if (idx === -1) throw new Error(`Workspace ${id} not found`);
+
+    const remaining = workspaces.filter((w) => w.id !== id);
+    await writeWorkspaces(remaining);
+
+    const todos = await readTodos();
+    const removedIds = todos.filter((t) => t.workspaceId === id).map((t) => t.id);
+    if (removedIds.length > 0) {
+      await writeTodos(todos.filter((t) => t.workspaceId !== id));
+    }
+
+    const settings = await readSettings();
+    if (settings.activeWorkspaceId === id) {
+      settings.activeWorkspaceId = remaining[0].id;
+      await writeSettings(settings);
+    }
+
+    return { removedTodoIds: removedIds };
+  });
+
   ipcMain.handle('settings:get', async () => readSettings());
   ipcMain.handle('settings:save', async (_evt, s) => writeSettings(s));
 
-  ipcMain.handle('notion:sendReport', async (_evt, range: ReportRange, clearCompleted?: unknown) => {
-    const settings = await readSettings();
-    if (!settings.notionToken || !settings.notionPageId) {
-      throw new Error('Notion settings missing. Add token and page ID first.');
-    }
-    const todos = await readTodos();
-    const result = await sendNotionReport({
-      token: settings.notionToken,
-      pageId: settings.notionPageId,
-      todos,
-      range,
-    });
-
-    let removedIds: string[] = [];
-    if (clearCompleted === true) {
-      const fresh = await readTodos();
-      removedIds = fresh.filter((t) => t.done).map((t) => t.id);
-      if (removedIds.length > 0) {
-        await writeTodos(fresh.filter((t) => !t.done));
+  ipcMain.handle(
+    'notion:sendReport',
+    async (_evt, range: ReportRange, clearCompleted?: unknown, workspaceId?: unknown) => {
+      if (typeof workspaceId !== 'string' || !workspaceId) {
+        throw new Error('notion:sendReport expects a workspaceId');
       }
-    }
+      const settings = await readSettings();
+      if (!settings.notionToken || !settings.notionPageId) {
+        throw new Error('Notion settings missing. Add token and page ID first.');
+      }
+      const workspaces = await readWorkspaces();
+      const workspace = workspaces.find((w) => w.id === workspaceId);
+      if (!workspace) throw new Error(`Workspace ${workspaceId} not found`);
 
-    return { url: result.url, removedIds };
-  });
+      const todos = await readTodos();
+      const scoped = todos.filter((t) => t.workspaceId === workspaceId);
+      const result = await sendNotionReport({
+        token: settings.notionToken,
+        pageId: settings.notionPageId,
+        todos: scoped,
+        range,
+        workspaceName: workspace.name,
+      });
+
+      let removedIds: string[] = [];
+      if (clearCompleted === true) {
+        const fresh = await readTodos();
+        removedIds = fresh
+          .filter((t) => t.done && t.workspaceId === workspaceId)
+          .map((t) => t.id);
+        if (removedIds.length > 0) {
+          const removedSet = new Set(removedIds);
+          await writeTodos(fresh.filter((t) => !removedSet.has(t.id)));
+        }
+      }
+
+      return { url: result.url, removedIds };
+    },
+  );
 
   ipcMain.handle('shell:openExternal', async (_evt, url: string) => {
     await shell.openExternal(url);

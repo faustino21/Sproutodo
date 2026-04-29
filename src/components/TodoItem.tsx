@@ -1,8 +1,9 @@
 import { useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
-import { GripVertical, Pencil, X } from 'lucide-react';
+import { FolderInput, GripVertical, Pencil, X } from 'lucide-react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import type { Todo } from '../lib/types';
+import type { Todo, Workspace } from '../lib/types';
+import { useDismiss } from '../hooks/useDismiss';
 import s from '../styles/App.module.css';
 
 type Props = {
@@ -10,13 +11,31 @@ type Props = {
   onToggle: (id: string) => void;
   onRemove: (id: string) => void;
   onEdit: (id: string, text: string) => void;
+  workspaces: Workspace[];
+  activeWorkspaceId: string | null;
+  onMove: (id: string, workspaceId: string) => void;
 };
 
-export function TodoItem({ todo, onToggle, onRemove, onEdit }: Props) {
+export function TodoItem({
+  todo,
+  onToggle,
+  onRemove,
+  onEdit,
+  workspaces,
+  activeWorkspaceId,
+  onMove,
+}: Props) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(todo.text);
+  const [moveOpen, setMoveOpen] = useState(false);
+  const moveWrapRef = useRef<HTMLDivElement | null>(null);
   // React fires onBlur during unmount, which would re-fire commit after Enter.
   const settledRef = useRef(false);
+
+  const otherWorkspaces = workspaces.filter((w) => w.id !== activeWorkspaceId);
+  const canMove = otherWorkspaces.length > 0;
+
+  useDismiss(moveOpen, moveWrapRef, setMoveOpen);
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: todo.id,
@@ -99,6 +118,41 @@ export function TodoItem({ todo, onToggle, onRemove, onEdit }: Props) {
             <Pencil size={13} strokeWidth={2.2} />
           </button>
         </>
+      )}
+      {canMove && !editing && (
+        <div className={s.moveWrap} ref={moveWrapRef}>
+          <button
+            type="button"
+            className={`${s.iconAction} ${s.moveButton}`}
+            onClick={() => setMoveOpen((v) => !v)}
+            aria-label="Move to workspace"
+            aria-haspopup="listbox"
+            aria-expanded={moveOpen}
+            title="Move to workspace"
+          >
+            <FolderInput size={14} strokeWidth={2.2} />
+          </button>
+          {moveOpen && (
+            <div className={s.movePopover} role="listbox">
+              <div className={s.movePopoverHeader}>Move to…</div>
+              {otherWorkspaces.map((w) => (
+                <button
+                  key={w.id}
+                  type="button"
+                  role="option"
+                  aria-selected={false}
+                  className={s.workspacePopoverItem}
+                  onClick={() => {
+                    setMoveOpen(false);
+                    onMove(todo.id, w.id);
+                  }}
+                >
+                  <span className={s.workspaceItemName}>{w.name}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       )}
       <button
         className={`${s.iconAction} ${s.delete}`}

@@ -5,6 +5,7 @@ import s from '../styles/App.module.css';
 type Props = {
   open: boolean;
   onClose: () => void;
+  workspaceId: string | null;
   onSent: (url: string, removedIds: string[]) => void;
   onMissingSettings: () => void;
 };
@@ -22,7 +23,7 @@ function formatRange(r: DateRange | undefined) {
   return `Reporting ${toIsoDate(r.from)} → ${toIsoDate(r.to)}`;
 }
 
-export function ReportDialog({ open, onClose, onSent, onMissingSettings }: Props) {
+export function ReportDialog({ open, onClose, workspaceId, onSent, onMissingSettings }: Props) {
   const today = new Date();
   const [range, setRange] = useState<DateRange | undefined>({ from: today, to: today });
   const [sending, setSending] = useState(false);
@@ -40,7 +41,7 @@ export function ReportDialog({ open, onClose, onSent, onMissingSettings }: Props
   if (!open) return null;
 
   const handleSend = async () => {
-    if (!range?.from) return;
+    if (!range?.from || !workspaceId) return;
     const settings = await window.api.settings.get();
     if (!settings.notionToken || !settings.notionPageId) {
       onMissingSettings();
@@ -52,7 +53,11 @@ export function ReportDialog({ open, onClose, onSent, onMissingSettings }: Props
     try {
       const from = toIsoDate(range.from);
       const to = toIsoDate(range.to ?? range.from);
-      const result = await window.api.notion.sendReport({ from, to }, clearCompleted);
+      const result = await window.api.notion.sendReport(
+        { from, to },
+        clearCompleted,
+        workspaceId,
+      );
       onSent(result.url, result.removedIds);
       onClose();
     } catch (err) {
@@ -98,7 +103,7 @@ export function ReportDialog({ open, onClose, onSent, onMissingSettings }: Props
           <button
             className={`${s.btn} ${s.btnPrimary}`}
             onClick={handleSend}
-            disabled={sending || !range?.from}
+            disabled={sending || !range?.from || !workspaceId}
           >
             {sending ? 'Sending…' : 'Send'}
           </button>
