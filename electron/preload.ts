@@ -1,18 +1,29 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { Todo, Settings } from './storage.js';
+import type { Todo, Settings, Workspace } from './storage.js';
 import type { ReportRange } from './notion.js';
 import type { UpdaterStatus } from './main.js';
 
 const api = {
   todos: {
-    list: (): Promise<Todo[]> => ipcRenderer.invoke('todos:list'),
-    add: (text: string): Promise<Todo> => ipcRenderer.invoke('todos:add', text),
+    list: (workspaceId: string): Promise<Todo[]> => ipcRenderer.invoke('todos:list', workspaceId),
+    add: (text: string, workspaceId: string): Promise<Todo> =>
+      ipcRenderer.invoke('todos:add', text, workspaceId),
     toggle: (id: string): Promise<Todo> => ipcRenderer.invoke('todos:toggle', id),
     remove: (id: string): Promise<void> => ipcRenderer.invoke('todos:remove', id),
     update: (id: string, text: string): Promise<Todo> =>
       ipcRenderer.invoke('todos:update', id, text),
-    reorder: (ids: string[]): Promise<Todo[]> =>
-      ipcRenderer.invoke('todos:reorder', ids),
+    reorder: (workspaceId: string, ids: string[]): Promise<Todo[]> =>
+      ipcRenderer.invoke('todos:reorder', workspaceId, ids),
+    move: (id: string, workspaceId: string): Promise<Todo> =>
+      ipcRenderer.invoke('todos:move', id, workspaceId),
+  },
+  workspaces: {
+    list: (): Promise<Workspace[]> => ipcRenderer.invoke('workspaces:list'),
+    create: (name: string): Promise<Workspace> => ipcRenderer.invoke('workspaces:create', name),
+    rename: (id: string, name: string): Promise<Workspace> =>
+      ipcRenderer.invoke('workspaces:rename', id, name),
+    remove: (id: string): Promise<{ removedTodoIds: string[] }> =>
+      ipcRenderer.invoke('workspaces:delete', id),
   },
   settings: {
     get: (): Promise<Settings> => ipcRenderer.invoke('settings:get'),
@@ -22,8 +33,9 @@ const api = {
     sendReport: (
       range: ReportRange,
       clearCompleted: boolean,
+      workspaceId: string,
     ): Promise<{ url: string; removedIds: string[] }> =>
-      ipcRenderer.invoke('notion:sendReport', range, clearCompleted),
+      ipcRenderer.invoke('notion:sendReport', range, clearCompleted, workspaceId),
   },
   shell: {
     openExternal: (url: string): Promise<void> => ipcRenderer.invoke('shell:openExternal', url),

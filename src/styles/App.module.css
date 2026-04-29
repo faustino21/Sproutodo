@@ -10,10 +10,22 @@
 .header {
   -webkit-app-region: drag;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  align-items: stretch;
   padding: 18px 0 14px;
   margin-top: env(titlebar-area-height, 28px);
+}
+
+.headerTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.headerSwitcher {
+  display: flex;
+  -webkit-app-region: no-drag;
+  padding-top: 6px;
 }
 
 .brand {
@@ -194,6 +206,40 @@
 .editButton:hover {
   color: var(--accent-deep);
   background: var(--accent-soft);
+}
+
+.moveButton:hover {
+  color: var(--accent-deep);
+  background: var(--accent-soft);
+}
+
+.moveWrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.movePopover {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: 180px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md);
+  padding: 4px;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.movePopoverHeader {
+  font-size: 11px;
+  color: var(--text-muted);
+  padding: 4px 8px 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
 }
 
 .itemEditInput {
@@ -492,4 +538,168 @@
 .btnGhost:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Workspace switcher */
+.workspaceSwitcher {
+  position: relative;
+  -webkit-app-region: no-drag;
+}
+
+.workspacePill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px 4px 10px;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+  max-width: 180px;
+}
+
+.workspacePill:hover {
+  background: var(--accent-soft);
+  color: var(--accent-deep);
+  border-color: var(--border);
+}
+
+.workspacePillName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspacePopover {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 220px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md);
+  padding: 4px;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.workspacePopoverItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+
+.workspacePopoverItem:hover {
+  background: var(--accent-soft);
+}
+
+.workspacePopoverActive {
+  color: var(--accent-deep);
+  font-weight: 500;
+}
+
+.workspaceItemCheck {
+  width: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.workspaceItemName {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspacePopoverDivider {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 0;
+}
+
+.workspaceCreateRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  color: var(--text-muted);
+}
+
+.workspaceCreateInput {
+  flex: 1;
+  border: 1px solid var(--accent);
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+  font-size: 13px;
+  color: var(--text);
+  outline: none;
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+/* Manage workspaces dialog */
+.workspaceManageList {
+  list-style: none;
+  margin: 0 0 4px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.workspaceManageRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+
+.workspaceManageName {
+  flex: 1;
+  font-size: 13px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspaceManageRow .iconAction {
+  opacity: 1;
+}
+
+.workspaceManageInput {
+  flex: 1;
+  border: 1px solid var(--accent);
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+  font-size: 13px;
+  color: var(--text);
+  outline: none;
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }

@@ -13,7 +13,7 @@ import {
   verticalListSortingStrategy,
   arrayMove,
 } from '@dnd-kit/sortable';
-import type { Todo } from '../lib/types';
+import type { Todo, Workspace } from '../lib/types';
 import { TodoItem } from './TodoItem';
 import s from '../styles/App.module.css';
 
@@ -23,9 +23,21 @@ type Props = {
   onRemove: (id: string) => void;
   onEdit: (id: string, text: string) => void;
   onReorder: (ids: string[]) => void;
+  workspaces: Workspace[];
+  activeWorkspaceId: string | null;
+  onMove: (id: string, workspaceId: string) => void;
 };
 
-export function TodoList({ todos, onToggle, onRemove, onEdit, onReorder }: Props) {
+export function TodoList({
+  todos,
+  onToggle,
+  onRemove,
+  onEdit,
+  onReorder,
+  workspaces,
+  activeWorkspaceId,
+  onMove,
+}: Props) {
   const sorted = [...todos].sort((a, b) => Number(a.done) - Number(b.done));
   const sortedIds = sorted.map((t) => t.id);
 
@@ -54,6 +66,9 @@ export function TodoList({ todos, onToggle, onRemove, onEdit, onReorder }: Props
               onToggle={onToggle}
               onRemove={onRemove}
               onEdit={onEdit}
+              workspaces={workspaces}
+              activeWorkspaceId={activeWorkspaceId}
+              onMove={onMove}
             />
           ))}
         </ul>
