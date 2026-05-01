@@ -1,9 +1,14 @@
-import { useState, type KeyboardEvent } from 'react';
+import { useState, type KeyboardEvent, type Ref } from 'react';
 import { Plus } from 'lucide-react';
 import s from '../styles/App.module.css';
 import plantUrl from '../assets/plant.webp';
 
-export function TodoInput({ onAdd }: { onAdd: (text: string) => void }) {
+type Props = {
+  onAdd: (text: string) => void;
+  inputRef?: Ref<HTMLInputElement>;
+};
+
+export function TodoInput({ onAdd, inputRef }: Props) {
   const [value, setValue] = useState('');
 
   const submit = () => {
@@ -22,6 +27,7 @@ export function TodoInput({ onAdd }: { onAdd: (text: string) => void }) {
       <div className={s.inputWrap}>
         <Plus size={16} strokeWidth={2.2} />
         <input
+          ref={inputRef}
           className={s.input}
           placeholder="Add a task…"
           value={value}

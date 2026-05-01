@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { Settings, UpdaterStatus } from '../lib/types';
+import { useModalKeys } from '../hooks/useModalKeys';
 import s from '../styles/App.module.css';
 
 function statusLabel(status: UpdaterStatus): string {
@@ -60,8 +61,6 @@ export function SettingsDialog({ open, onClose, onSaved }: Props) {
     return unsubscribe;
   }, [open]);
 
-  if (!open) return null;
-
   const handleSave = async () => {
     setSaving(true);
     setError(null);
@@ -79,6 +78,10 @@ export function SettingsDialog({ open, onClose, onSaved }: Props) {
       setSaving(false);
     }
   };
+
+  useModalKeys(open, { onClose, onSubmit: handleSave });
+
+  if (!open) return null;
 
   return (
     <div className={s.backdrop} onMouseDown={onClose}>

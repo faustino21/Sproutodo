@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Leaf, Settings as SettingsIcon, Send } from 'lucide-react';
+import { useCallback, useRef, useState } from 'react';
+import { HelpCircle, Leaf, Settings as SettingsIcon, Send } from 'lucide-react';
 import { useTodos } from './hooks/useTodos';
 import { useWorkspaces } from './hooks/useWorkspaces';
 import { TodoInput } from './components/TodoInput';
@@ -9,6 +9,9 @@ import { SettingsDialog } from './components/SettingsDialog';
 import { ReportDialog } from './components/ReportDialog';
 import { WorkspaceSwitcher } from './components/WorkspaceSwitcher';
 import { ManageWorkspacesDialog } from './components/ManageWorkspacesDialog';
+import { ShortcutsHelpDialog } from './components/ShortcutsHelpDialog';
+import { useGlobalShortcuts } from './hooks/useGlobalShortcuts';
+import { modJoin } from './lib/keys';
 import s from './styles/App.module.css';
 
 export default function App() {
@@ -25,7 +28,10 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [manageOpen, setManageOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const [toast, setToast] = useState<{ message: string; url?: string } | null>(null);
+
+  const addInputRef = useRef<HTMLInputElement | null>(null);
 
   const showToast = (message: string, url?: string) => {
     setToast({ message, url });
@@ -36,6 +42,43 @@ export default function App() {
     const result = await removeWorkspace(id);
     dropLocal(result.removedTodoIds);
   };
+
+  const focusAdd = useCallback(() => {
+    const el = addInputRef.current;
+    if (!el) return;
+    el.focus();
+    el.select();
+  }, []);
+
+  const workspaceByIndex = useCallback(
+    (index: number) => {
+      const w = workspaces[index];
+      if (w) setActive(w.id);
+    },
+    [workspaces, setActive],
+  );
+
+  const workspaceStep = useCallback(
+    (delta: 1 | -1) => {
+      if (workspaces.length === 0) return;
+      const i = workspaces.findIndex((w) => w.id === activeId);
+      const next = workspaces[(i + delta + workspaces.length) % workspaces.length];
+      if (next) setActive(next.id);
+    },
+    [workspaces, activeId, setActive],
+  );
+
+  useGlobalShortcuts({
+    onFocusAdd: focusAdd,
+    onOpenSettings: () => setSettingsOpen(true),
+    onOpenReport: () => setReportOpen(true),
+    onOpenManage: () => setManageOpen(true),
+    onShowHelp: () => setHelpOpen(true),
+    onWorkspaceByIndex: workspaceByIndex,
+    onWorkspaceNext: () => workspaceStep(1),
+    onWorkspacePrev: () => workspaceStep(-1),
+    isAnyDialogOpen: settingsOpen || reportOpen || manageOpen || helpOpen,
+  });
 
   return (
     <div className={s.app}>
@@ -48,9 +91,17 @@ export default function App() {
           <div className={s.headerActions}>
             <button
               className={s.iconButton}
+              onClick={() => setHelpOpen(true)}
+              aria-label="Keyboard shortcuts"
+              title={`Keyboard shortcuts (?)`}
+            >
+              <HelpCircle size={16} strokeWidth={2} />
+            </button>
+            <button
+              className={s.iconButton}
               onClick={() => setSettingsOpen(true)}
               aria-label="Settings"
-              title="Settings"
+              title={`Settings (${modJoin(',')})`}
             >
               <SettingsIcon size={16} strokeWidth={2} />
             </button>
@@ -58,7 +109,7 @@ export default function App() {
               className={s.iconButton}
               onClick={() => setReportOpen(true)}
               aria-label="Send report to Notion"
-              title="Send report to Notion"
+              title={`Send report to Notion (${modJoin('⇧R', 'Shift+R')})`}
             >
               <Send size={16} strokeWidth={2} />
             </button>
@@ -94,7 +145,7 @@ export default function App() {
         />
       )}
 
-      <TodoInput onAdd={add} />
+      <TodoInput onAdd={add} inputRef={addInputRef} />
 
       <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} />
       <ReportDialog
@@ -118,6 +169,7 @@ export default function App() {
         onRename={renameWorkspace}
         onDelete={handleDeleteWorkspace}
       />
+      <ShortcutsHelpDialog open={helpOpen} onClose={() => setHelpOpen(false)} />
 
       {toast && (
         <div className={s.toast}>

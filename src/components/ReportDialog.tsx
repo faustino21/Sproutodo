@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { DayPicker, type DateRange } from 'react-day-picker';
+import { useModalKeys } from '../hooks/useModalKeys';
 import s from '../styles/App.module.css';
 
 type Props = {
@@ -38,8 +39,6 @@ export function ReportDialog({ open, onClose, workspaceId, onSent, onMissingSett
     }
   }, [open]);
 
-  if (!open) return null;
-
   const handleSend = async () => {
     if (!range?.from || !workspaceId) return;
     const settings = await window.api.settings.get();
@@ -66,6 +65,10 @@ export function ReportDialog({ open, onClose, workspaceId, onSent, onMissingSett
       setSending(false);
     }
   };
+
+  useModalKeys(open, { onClose, onSubmit: handleSend });
+
+  if (!open) return null;
 
   return (
     <div className={s.backdrop} onMouseDown={onClose}>

@@ -1,4 +1,4 @@
-import { useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
 import { FolderInput, GripVertical, Pencil, X } from 'lucide-react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -14,6 +14,10 @@ type Props = {
   workspaces: Workspace[];
   activeWorkspaceId: string | null;
   onMove: (id: string, workspaceId: string) => void;
+  editing: boolean;
+  onEditingChange: (editing: boolean) => void;
+  moveOpen: boolean;
+  onMoveOpenChange: (open: boolean) => void;
 };
 
 export function TodoItem({
@@ -24,10 +28,12 @@ export function TodoItem({
   workspaces,
   activeWorkspaceId,
   onMove,
+  editing,
+  onEditingChange,
+  moveOpen,
+  onMoveOpenChange,
 }: Props) {
-  const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(todo.text);
-  const [moveOpen, setMoveOpen] = useState(false);
   const moveWrapRef = useRef<HTMLDivElement | null>(null);
   // React fires onBlur during unmount, which would re-fire commit after Enter.
   const settledRef = useRef(false);
@@ -35,7 +41,14 @@ export function TodoItem({
   const otherWorkspaces = workspaces.filter((w) => w.id !== activeWorkspaceId);
   const canMove = otherWorkspaces.length > 0;
 
-  useDismiss(moveOpen, moveWrapRef, setMoveOpen);
+  useDismiss(moveOpen, moveWrapRef, onMoveOpenChange);
+
+  useEffect(() => {
+    if (editing) {
+      settledRef.current = false;
+      setDraft(todo.text);
+    }
+  }, [editing, todo.text]);
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: todo.id,
@@ -49,13 +62,11 @@ export function TodoItem({
   const exitEdit = () => {
     settledRef.current = true;
     setDraft(todo.text);
-    setEditing(false);
+    onEditingChange(false);
   };
 
   const startEdit = () => {
-    settledRef.current = false;
-    setDraft(todo.text);
-    setEditing(true);
+    onEditingChange(true);
   };
 
   const commit = () => {
@@ -75,6 +86,8 @@ export function TodoItem({
       ref={setNodeRef}
       style={style}
       className={`${s.item} ${isDragging ? s.dragging : ''}`}
+      tabIndex={0}
+      data-todo-id={todo.id}
     >
       {todo.done ? (
         <span className={s.dragHandlePlaceholder} aria-hidden />
@@ -124,7 +137,7 @@ export function TodoItem({
           <button
             type="button"
             className={`${s.iconAction} ${s.moveButton}`}
-            onClick={() => setMoveOpen((v) => !v)}
+            onClick={() => onMoveOpenChange(!moveOpen)}
             aria-label="Move to workspace"
             aria-haspopup="listbox"
             aria-expanded={moveOpen}
@@ -143,7 +156,7 @@ export function TodoItem({
                   aria-selected={false}
                   className={s.workspacePopoverItem}
                   onClick={() => {
-                    setMoveOpen(false);
+                    onMoveOpenChange(false);
                     onMove(todo.id, w.id);
                   }}
                 >

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Check, Pencil, Trash2, X } from 'lucide-react';
 import type { Workspace } from '../lib/types';
+import { useModalKeys } from '../hooks/useModalKeys';
 import s from '../styles/App.module.css';
 
 type Props = {
@@ -40,6 +41,8 @@ export function ManageWorkspacesDialog({ open, onClose, workspaces, onRename, on
       cancelled = true;
     };
   }, [open, workspaces]);
+
+  useModalKeys(open, { onClose });
 
   if (!open) return null;
 
@@ -98,8 +101,14 @@ export function ManageWorkspacesDialog({ open, onClose, workspaces, onRename, on
                     value={draftName}
                     onChange={(e) => setDraftName(e.target.value)}
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter') commitEdit();
-                      if (e.key === 'Escape') setEditingId(null);
+                      if (e.key === 'Enter') {
+                        e.stopPropagation();
+                        commitEdit();
+                      }
+                      if (e.key === 'Escape') {
+                        e.stopPropagation();
+                        setEditingId(null);
+                      }
                     }}
                   />
                   <button
