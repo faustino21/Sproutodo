@@ -1,3 +1,4 @@
+import { useCallback, useState } from 'react';
 import {
   DndContext,
   PointerSensor,
@@ -15,6 +16,7 @@ import {
 } from '@dnd-kit/sortable';
 import type { Todo, Workspace } from '../lib/types';
 import { TodoItem } from './TodoItem';
+import { useListNav } from '../hooks/useListNav';
 import s from '../styles/App.module.css';
 
 type Props = {
@@ -55,10 +57,23 @@ export function TodoList({
     onReorder(arrayMove(sortedIds, oldIndex, newIndex));
   };
 
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [moveOpenId, setMoveOpenId] = useState<string | null>(null);
+
+  const startEdit = useCallback((id: string) => setEditingId(id), []);
+  const openMove = useCallback((id: string) => setMoveOpenId(id), []);
+
+  const onListKeyDown = useListNav({
+    onToggle,
+    onRemove,
+    onStartEdit: startEdit,
+    onOpenMove: openMove,
+  });
+
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
       <SortableContext items={sortedIds} strategy={verticalListSortingStrategy}>
-        <ul className={s.list}>
+        <ul className={s.list} onKeyDown={onListKeyDown}>
           {sorted.map((t) => (
             <TodoItem
               key={t.id}
@@ -69,6 +84,10 @@ export function TodoList({
               workspaces={workspaces}
               activeWorkspaceId={activeWorkspaceId}
               onMove={onMove}
+              editing={editingId === t.id}
+              onEditingChange={(editing) => setEditingId(editing ? t.id : null)}
+              moveOpen={moveOpenId === t.id}
+              onMoveOpenChange={(open) => setMoveOpenId(open ? t.id : null)}
             />
           ))}
         </ul>

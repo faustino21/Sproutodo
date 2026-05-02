@@ -120,7 +120,7 @@
 .list {
   list-style: none;
   margin: 16px 0 12px;
-  padding: 0;
+  padding: 0 3px;
   flex: 1;
   overflow-y: auto;
 }
@@ -138,8 +138,19 @@
   background: var(--accent-soft);
 }
 
-.item:hover .iconAction {
+.item:hover .iconAction,
+.item:focus-visible .iconAction {
   opacity: 1;
+}
+
+.item:focus {
+  outline: none;
+}
+
+.item:focus-visible {
+  outline: none;
+  background: var(--accent-soft);
+  box-shadow: 0 0 0 2px var(--accent);
 }
 
 .checkbox {
@@ -702,4 +713,50 @@
   color: var(--text);
   outline: none;
   box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+/* Shortcuts help dialog */
+.helpModal {
+  max-width: 480px;
+}
+
+.shortcutList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.shortcutRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+}
+
+.shortcutRow:hover {
+  background: var(--bg);
+}
+
+.shortcutKeys {
+  flex-shrink: 0;
+  min-width: 140px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  color: var(--accent-deep);
+  background: var(--accent-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 3px 8px;
+  text-align: center;
+}
+
+.shortcutLabel {
+  font-size: 13px;
+  color: var(--text);
 }

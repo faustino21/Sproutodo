@@ -1,6 +1,6 @@
 {
   "name": "sproutodo",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "description": "A clean desktop todo list with Notion reporting.",
   "main": "dist-electron/main.js",
   "type": "module",
